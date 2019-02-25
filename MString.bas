@@ -7,7 +7,7 @@ Public Function Capitalize(ByVal Word As String) As String
     Dim FirstChar As String
     Let FirstChar = Left$(Word, 1)
     If Asc(FirstChar) < 97 Or Asc(FirstChar) > 122 Then Exit Function
-    Let FirstChar = Chr(Asc(FirstChar) - 32)
+    Let FirstChar = Chr$(Asc(FirstChar) - 32)
     Let Capitalize = FirstChar & Mid$(Word, 2)
 End Function
 
@@ -29,21 +29,22 @@ Public Function TitleCase(ByVal Text As String, _
                     Else
                         Let NewWord = Word
                     End If
+                Case "lp", "llc"
+                    Let NewWord = UpperCase(Word)
                 Case Else
                     Let NewWord = Capitalize(Word)
             End Select
             Let NewString = NewString & NewWord
             If i <> UBound(Words) Then Let NewString = NewString & " "
         End If
-Continue:
     Next i
     Let TitleCase = NewString
 End Function
 
 Public Function LowerCase(ByVal Text As String) As String
-    Let LowerCase = LCase(Text)
+    Let LowerCase = LCase$(Text)
 End Function
 
 Public Function UpperCase(ByVal Text As String) As String
-    Let UpperCase = UCase(Text)
+    Let UpperCase = UCase$(Text)
 End Function
