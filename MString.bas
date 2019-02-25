@@ -1,6 +1,13 @@
 Attribute VB_Name = "MString"
 Option Explicit
 
+Public Const ASCII_LETTERS As String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+Public Const ASCII_LOWERCASE As String = "abcdefghijklmnopqrstuvwxyz"
+Public Const ASCII_UPPERCASE As String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+Public Const DECIMAL_DIGITS As String = "0123456789"
+Public Const HEXADECIMAL_DIGITS As String = "0123456789abcdefABCDEF"
+Public Const OCTAL_DIGITS As String = "01234567"
+
 Public Function Capitalize(ByVal Word As String) As String
     Let Capitalize = Word
     Let Word = Trim$(Word)
@@ -9,6 +16,33 @@ Public Function Capitalize(ByVal Word As String) As String
     If Asc(FirstChar) < 97 Or Asc(FirstChar) > 122 Then Exit Function
     Let FirstChar = Chr$(Asc(FirstChar) - 32)
     Let Capitalize = FirstChar & Mid$(Word, 2)
+End Function
+
+Public Function Concatenate(ByRef Strings As Variant, _
+                   Optional ByVal Delimiter As String = vbNullString) As String
+    Dim Concatenated As String
+    Let Concatenated = vbNullString
+    On Error GoTo ErrorHandling
+    Dim i As Long
+    Select Case VBA.VarType(Strings)
+        Case Is >= VBA.vbArray
+            For i = 0 To UBound(Strings)
+                Let Concatenated = Concatenated & CStr(Strings(i))
+                If i < UBound(Strings) Then Let Concatenated = Concatenated & Delimiter
+            Next i
+        Case VBA.vbString
+            Let Concatenated = Strings
+        Case VBA.vbObject
+            If VBA.TypeName(Strings) = "Collection" Then
+                For i = 1 To Strings.Count
+                    Let Concatenated = Concatenated & CStr(Strings(i))
+                    If i < Strings.Count Then Let Concatenated = Concatenated & Delimiter
+                Next i
+            End If
+        Case Else
+    End Select
+ErrorHandling:
+    Let Concatenate = Concatenated
 End Function
 
 Public Function TitleCase(ByVal Text As String, _
