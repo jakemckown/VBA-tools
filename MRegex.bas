@@ -38,6 +38,17 @@ Public Function GetMatches(ByVal SourceString As String, _
     Set GetMatches = MatchCollection
 End Function
 
+Public Function GetMatch(ByVal SourceString As String, _
+                         ByVal Pattern As String, _
+                Optional ByVal Match As Long = 1) As String
+    Let GetMatch = vbNullString
+    On Error GoTo ErrorHandling
+    Dim Matches As Collection
+    Set Matches = GetMatches(SourceString, Pattern)
+    Let GetMatch = Matches(Match)(2)
+ErrorHandling:
+End Function
+
 Public Function GetSubMatch(ByVal SourceString As String, _
                             ByVal Pattern As String, _
                    Optional ByVal Match As Long = 1, _
