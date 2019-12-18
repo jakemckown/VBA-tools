@@ -7,19 +7,23 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+' Requires:    MRegex.bas
+'              MRuntime.bas
+'              MTable.bas
+
 Option Explicit
 
 Private pName As String
 Private pTable As Range
-
-Private Const BUTTON_ADD_ROW_TEXT As String = "+"
-Private Const BUTTON_DELETE_ROW_TEXT As String = "–"
+Private pIndex As Range
 
 Public Property Get Address() As String
     Let Address = pTable.Address
 End Property
 
-Public Sub AddRow(ByRef InsertBelow As Range)
+Public Sub AddRow(ByVal InsertBelow As Range, _
+                  ByVal LineStyle As tLineStyleEnum, _
+                  ByVal BorderWeight As tBorderWeightEnum)
     If IsEntry(InsertBelow) Then
         Call MRuntime.Save
         Call MRuntime.Fast
@@ -29,38 +33,38 @@ Public Sub AddRow(ByRef InsertBelow As Range)
         Call InsertBelow.EntireRow.Offset(1).Insert(xlDown)
         Let Application.CutCopyMode = False
         With InsertBelow.Borders(xlEdgeBottom)
-            Let .LineStyle = xlContinuous
-            Let .Weight = xlHairline
+            Let .LineStyle = LineStyle
+            If Not BorderWeight = tBorderWeightNone Then Let .Weight = BorderWeight
         End With
 ErrorHandling:
         Call MRuntime.Restore
     Else
-        Dim Message As String
-        Let Message = vbNullString
-        Let Message = Message & "To add a row to this table, click on the row you wish "
-        Let Message = Message & "to insert the new row below, then click the "
-        Let Message = Message & BUTTON_ADD_ROW_TEXT
-        Let Message = Message & " button."
-        Call MsgBox(Message, vbOKOnly + vbInformation, "How to add a row")
+        Call DisplayCellsOutsideTableMessage
         Exit Sub
     End If
-    If HasIndex Then Call RefreshIndex
+    If Not pIndex Is Nothing Then Call RefreshIndex
 End Sub
 
-Public Sub Bind(ByRef Name As Name)
+Public Sub Bind(ByVal Name As Name)
     Dim Matches As Collection
     Set Matches = MRegex.GetMatches(Name.Name, "Table_(\w+)")
     Let pName = Matches(1)(3)
     Set pTable = Name.RefersToRange
+    Set pIndex = Nothing
+    On Error GoTo ErrorHandling
+    Dim WS As Worksheet
+    Set WS = pTable.Worksheet
+    Set pIndex = WS.Names("TableIndex_" & pName).RefersToRange
+ErrorHandling:
 End Sub
 
 Public Property Get ColumnCount() As Long
     Let ColumnCount = pTable.Columns.Count
 End Property
 
-Public Sub DeleteRows(ByRef CellsInTable As Range)
-    Dim Message As String
+Public Sub DeleteRows(ByVal CellsInTable As Range)
     If IsEntry(CellsInTable) Then
+        Dim Message As String
         If IncludesAllRows(CellsInTable) Then
             Let Message = "Cannot delete the selected row(s). At least one row must remain."
             Call MsgBox(Message, vbOKOnly + vbInformation, "Cannot delete row(s)")
@@ -89,20 +93,11 @@ ErrorHandling:
                 Exit Sub
         End Select
     Else
-        Let Message = vbNullString
-        Let Message = Message & "To delete rows, click on the row(s) you wish "
-        Let Message = Message & "to delete, then click the "
-        Let Message = Message & BUTTON_DELETE_ROW_TEXT
-        Let Message = Message & " button."
-        Call MsgBox(Message, vbOKOnly + vbInformation, "How to delete rows")
+        Call DisplayCellsOutsideTableMessage
         Exit Sub
     End If
-    If HasIndex Then Call RefreshIndex
+    If Not pIndex Is Nothing Then Call RefreshIndex
 End Sub
-
-Public Property Get HasIndex() As Boolean
-    Let HasIndex = False
-End Property
 
 Public Property Get Name() As Long
     Let Name = pName
@@ -112,7 +107,16 @@ Public Property Get RowCount() As Long
     Let Name = pTable.Rows.Count - 1
 End Property
 
-Private Function IncludesAllRows(ByRef CellsInTable As Range) As Boolean
+Private Sub DisplayCellsOutsideTableMessage()
+    Dim Message As String
+    Let Message = vbNullString
+    Let Message = Message & "One or more cells in the current selection are not "
+    Let Message = Message & "within the table. Please select only cells within the "
+    Let Message = Message & "table and try again."
+    Call MsgBox(Message, vbOKOnly + vbInformation, "One or more cells outside table")
+End Sub
+
+Private Function IncludesAllRows(ByVal CellsInTable As Range) As Boolean
     Let IncludesAllRows = True
     On Error GoTo ErrorHandling
     If Not Intersect(CellsInTable.Rows(1).Offset(-1), pTable) Is Nothing _
@@ -122,7 +126,7 @@ Private Function IncludesAllRows(ByRef CellsInTable As Range) As Boolean
 ErrorHandling:
 End Function
 
-Private Function IsEntry(ByRef Cells As Range) As Boolean
+Private Function IsEntry(ByVal Cells As Range) As Boolean
     Let IsEntry = False
     On Error GoTo ErrorHandling
     Dim Cell As Range
@@ -134,14 +138,12 @@ ErrorHandling:
 End Function
 
 Private Sub RefreshIndex()
-'    On Error Resume Next
-'    Call Runtime.SaveSettings
-'    Call Runtime.SetToFast(EnableEvents:=False)
-'    Dim Index As Range
-'    Set Index = WS.Range("TableIndex_" & TableName)
-'    Dim i As Integer
-'    For i = 1 To Index.Rows.Count - 1
-'        Let Index.Cells(i, 1).Value = i
-'    Next i
-'    Call Runtime.RestoreSettings
+    On Error Resume Next
+    Call MRuntime.Save
+    Call MRuntime.Fast
+    Dim i As Integer
+    For i = 1 To pIndex.Rows.Count - 1
+        Let pIndex.Cells(i, 1).Value = CStr(i)
+    Next i
+    Call MRuntime.Restore
 End Sub
